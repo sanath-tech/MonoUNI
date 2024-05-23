@@ -10,7 +10,7 @@ import cv2
 from help import read_kitti_ext
 from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections_one
-
+from help import show_box_with_roll
 cfg = yaml.load(open('lib/config.yaml', 'r'), Loader=yaml.Loader)
 
 logger = create_logger(os.path.join(cfg['trainer']['log_dir'],'train.log')) 
@@ -33,7 +33,7 @@ model.to(device)
 
 #####input
 dataset_dir = '/home/workstation/Documents/MonoUNI/Rope3D_data'
-instance = '1632_fa2sd4a11North_420_1612431546_1612432197_1_obstacle'
+instance = '1632_fa2sd4a11North_420_1612431546_1612432197_2_obstacle'
 calib = Calibration(f"{dataset_dir}/calib/{instance}.txt")
 calib_p = torch.tensor(calib.P2).unsqueeze(0).to(device)
 denorm = Denorm(f"{dataset_dir}/denorm/{instance}.txt")
@@ -41,9 +41,9 @@ pitch_sin=denorm.pitch_sin
 calib_pitch_sin=torch.tensor(pitch_sin).unsqueeze(0).to(device)
 pitch_cos=denorm.pitch_cos
 calib_pitch_cos=torch.tensor(pitch_cos).unsqueeze(0).to(device)
-img = cv2.imread(f"{dataset_dir}/image_2/{instance}.jpg")
+image = cv2.imread(f"{dataset_dir}/image_2/{instance}.jpg")
 resolution = [960 ,512]
-img = cv2.resize(img,(resolution[0],resolution[1]))
+img = cv2.resize(image,(resolution[0],resolution[1]))
 img = img.astype(np.float32)  / 255.0
 mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 std  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -74,3 +74,8 @@ dets = decode_detections_one(dets = dets,
                         cls_mean_size=cls_mean_size,
                         threshold = cfg['tester']['threshold']) 
 print(dets)
+
+detection_file = f"{dataset_dir}/label_2_4cls_filter_with_roi_for_eval/{instance}.txt"
+denorm_file = f"{dataset_dir}/denorm/{instance}.txt"
+calfile = f"{dataset_dir}/calib/{instance}.txt"
+show_box_with_roll(image,detection_file,extrinsic_file,denorm_file,calfile,dets,network=True,thresh=0.5, projectMethod='World')
