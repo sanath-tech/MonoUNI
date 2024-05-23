@@ -4,6 +4,64 @@ import torch.nn as nn
 from lib.datasets.utils import class2angle
 from lib.datasets.rope3d_utils import affine_transform
 
+def decode_detections_one(dets, info, calibs, denorms,cls_mean_size, threshold):
+    '''
+    NOTE: THIS IS A NUMPY FUNCTION
+    input: dets, numpy array, shape in [batch x max_dets x dim]
+    input: img_info, dict, necessary information of input images
+    input: calibs, corresponding calibs for the input batch
+    output:
+    '''
+    #results = {}
+    
+    preds = []
+    for j in range(dets.shape[1]):  # max_dets
+        cls_id = int(dets[0, j, 0])
+        score = dets[0, j, 1]
+        if score < threshold: continue
+        
+        # 2d bboxs decoding
+        x = dets[0, j, 2] * info['bbox_downsample_ratio'][0]
+        y = dets[0, j, 3] * info['bbox_downsample_ratio'][1]
+        w = dets[0, j, 4] * info['bbox_downsample_ratio'][0]
+        h = dets[0, j, 5] * info['bbox_downsample_ratio'][1]
+        bbox = [x-w/2, y-h/2, x+w/2, y+h/2]
+
+        # bbox[:2] = affine_transform(bbox[:2],info['trans_inv'][i].cpu().numpy())
+        # bbox[2:]= affine_transform(bbox[2:],info['trans_inv'][i].cpu().numpy())
+
+        # 3d bboxs decoding
+        # depth decoding
+        depth = dets[0, j, 6]
+
+        # heading angle decoding
+        alpha = get_heading_angle(dets[0, j, 7:31])
+        # alpha = 
+        # if alpha > 2 * np.pi:  alpha -= 2 * np.pi  # check range
+        # if alpha < 0: alpha += 2 * np.pi
+        ry = calibs.alpha2ry(alpha, x)
+
+
+        # dimensions decoding
+        dimensions = dets[0, j, 31:34]
+        # print(dimensions)
+        # dimensions += cls_mean_size[int(cls_id)]
+        if True in (dimensions<0.0): continue
+
+        # positions decoding
+        x3d = dets[0, j, 34] * info['bbox_downsample_ratio'][0]
+        y3d = dets[0, j, 35] * info['bbox_downsample_ratio'][1]
+        locations = calibs.img_to_rect(x3d, y3d, depth).reshape(-1)
+        locations = denorms.object_center2ground_center(locations.reshape(3,1),dimensions[0]).reshape(-1)
+
+        # locations[1] += dimensions[0] / 2
+
+
+
+        preds.append([cls_id, alpha] + bbox + dimensions.tolist() + locations.tolist() + [ry, score])
+        #results[info['img_id'][]] = preds
+    return preds
+
 def decode_detections(dets, info, calibs, denorms,cls_mean_size, threshold):
     '''
     NOTE: THIS IS A NUMPY FUNCTION

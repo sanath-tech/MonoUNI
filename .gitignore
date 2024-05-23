@@ -1,2 +1,4 @@
 Rope3D_data/
 env/
+output/
+__pycache__/
