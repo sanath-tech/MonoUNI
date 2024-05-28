@@ -400,8 +400,8 @@ def show_box_with_roll(img,detection_file,extrinsic_file,denorm_file,calfile,inf
         cv2.line(img, tuple(verts3d[0]), tuple(verts3d[4]), color_type, 2)
         cv2.line(img, tuple(verts3d[2]), tuple(verts3d[6]), color_type, 2)
     # Display the image
-    cv2.imshow('Detected Boxes', img)
-    cv2.waitKey(0) 
-    cv2.imwrite('%s.jpg' % ('out'), img)
+    # cv2.imshow('Detected Boxes', img)
+    # cv2.waitKey(0) 
+    # cv2.imwrite('%s.jpg' % ('out'), img)
 
-    
+    return img

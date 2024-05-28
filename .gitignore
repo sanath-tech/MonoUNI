@@ -2,3 +2,5 @@ Rope3D_data/
 env/
 output/
 __pycache__/
+test_field_data/
+result/
